@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Voting System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #667eea;
+            color: white;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: #764ba2;
+        }
+
+        button.secondary:hover {
+            background: #5d3a7a;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .candidates {
+            margin: 20px 0;
+        }
+
+        .candidate-item {
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+
+        .candidate-item:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .candidate-item.selected {
+            border-color: #667eea;
+            background: #e8eaff;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .tally-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f9f9f9;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .winner {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .back-btn {
+            margin-top: 20px;
+            background: #6c757d;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗳️ E-Voting System</h1>
+
+        <!-- Main Menu -->
+        <div id="mainMenu" class="panel active">
+            <div class="btn-group">
+                <button onclick="showVoterLogin()">Voter Login</button>
+                <button onclick="showAdminLogin()" class="secondary">Admin Panel</button>
+            </div>
+        </div>
+
+        <!-- Voter Login -->
+        <div id="voterLogin" class="panel">
+            <h2 style="margin-bottom: 20px; text-align: center;">Voter Login</h2>
+            <div id="voterMessage"></div>
+            <div class="form-group">
+                <label for="voterId">Enter Voter ID:</label>
+                <input type="text" id="voterId" placeholder="e.g., 1001" autocomplete="off">
+            </div>
+            <button onclick="checkVoter()">Submit</button>
+            <button onclick="backToMain()" class="back-btn">Back</button>
+        </div>
+
+        <!-- Voting Panel -->
+        <div id="votingPanel" class="panel">
+            <h2 style="margin-bottom: 20px; text-align: center;">Cast Your Vote</h2>
+            <div id="votingMessage"></div>
+            <div class="candidates" id="candidatesList"></div>
+            <button onclick="submitVote()" id="submitVoteBtn" disabled>Submit Vote</button>
+            <button onclick="backToMain()" class="back-btn">Back</button>
+        </div>
+
+        <!-- Admin Login -->
+        <div id="adminLogin" class="panel">
+            <h2 style="margin-bottom: 20px; text-align: center;">Admin Login</h2>
+            <div id="adminMessage"></div>
+            <div class="form-group">
+                <label for="adminId">Admin ID:</label>
+                <input type="text" id="adminId" placeholder="Enter admin ID" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="adminPassword">Password:</label>
+                <input type="password" id="adminPassword" placeholder="Enter password" autocomplete="off">
+            </div>
+            <button onclick="adminLogin()">Login</button>
+            <button onclick="backToMain()" class="back-btn">Back</button>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="adminPanel" class="panel">
+            <h2 style="margin-bottom: 20px; text-align: center;">Admin Panel</h2>
+            <div id="adminPanelMessage"></div>
+            <div class="btn-group">
+                <button onclick="decryptVotes()">Decrypt & Show Results</button>
+                <button onclick="resetVotes()" class="secondary">Reset Votes</button>
+            </div>
+            <div id="results" class="results"></div>
+            <button onclick="backToMain()" class="back-btn">Back</button>
+        </div>
+    </div>
+
+    <script>
+        let currentVoterId = null;
+        let selectedCandidate = null;
+
+        function showPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(panelId).classList.add('active');
+        }
+
+        function showMessage(elementId, message, type) {
+            const msgEl = document.getElementById(elementId);
+            msgEl.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                msgEl.innerHTML = '';
+            }, 5000);
+        }
+
+        function showVoterLogin() {
+            showPanel('voterLogin');
+            document.getElementById('voterId').value = '';
+            document.getElementById('voterMessage').innerHTML = '';
+        }
+
+        function showAdminLogin() {
+            showPanel('adminLogin');
+            document.getElementById('adminId').value = '';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminMessage').innerHTML = '';
+        }
+
+        function backToMain() {
+            showPanel('mainMenu');
+            currentVoterId = null;
+            selectedCandidate = null;
+        }
+
+        async function checkVoter() {
+            const voterId = document.getElementById('voterId').value.trim();
+            if (!voterId) {
+                showMessage('voterMessage', 'Please enter a voter ID.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/check_voter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ voterid: voterId })
+                });
+
+                const data = await response.json();
+
+                if (!data.exists) {
+                    showMessage('voterMessage', data.message, 'error');
+                } else if (data.voted) {
+                    showMessage('voterMessage', data.message, 'error');
+                } else {
+                    currentVoterId = voterId;
+                    showVotingPanel(data.candidates);
+                }
+            } catch (error) {
+                showMessage('voterMessage', 'Error connecting to server.', 'error');
+            }
+        }
+
+        function showVotingPanel(candidates) {
+            showPanel('votingPanel');
+            const candidatesList = document.getElementById('candidatesList');
+            candidatesList.innerHTML = '';
+            selectedCandidate = null;
+            document.getElementById('submitVoteBtn').disabled = true;
+
+            candidates.forEach((candidate, index) => {
+                const div = document.createElement('div');
+                div.className = 'candidate-item';
+                div.textContent = candidate;
+                div.onclick = () => selectCandidate(index, div);
+                candidatesList.appendChild(div);
+            });
+        }
+
+        function selectCandidate(index, element) {
+            document.querySelectorAll('.candidate-item').forEach(el => {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedCandidate = index;
+            document.getElementById('submitVoteBtn').disabled = false;
+        }
+
+        async function submitVote() {
+            if (selectedCandidate === null || !currentVoterId) {
+                showMessage('votingMessage', 'Please select a candidate.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/submit_vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        voterid: currentVoterId,
+                        candidate_index: selectedCandidate
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('votingMessage', data.message, 'success');
+                    setTimeout(() => {
+                        backToMain();
+                    }, 2000);
+                } else {
+                    showMessage('votingMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('votingMessage', 'Error submitting vote.', 'error');
+            }
+        }
+
+        async function adminLogin() {
+            const adminId = document.getElementById('adminId').value.trim();
+            const adminPassword = document.getElementById('adminPassword').value.trim();
+
+            if (!adminId || !adminPassword) {
+                showMessage('adminMessage', 'Please enter both admin ID and password.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin_login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_id: adminId,
+                        admin_password: adminPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showPanel('adminPanel');
+                    document.getElementById('adminPanelMessage').innerHTML = '';
+                    document.getElementById('results').innerHTML = '';
+                } else {
+                    showMessage('adminMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('adminMessage', 'Error connecting to server.', 'error');
+            }
+        }
+
+        async function decryptVotes() {
+            try {
+                const response = await fetch('/api/decrypt_votes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const resultsDiv = document.getElementById('results');
+                    let html = '';
+
+                    if (data.votes.length === 0) {
+                        html = '<div class="message info">No votes to display.</div>';
+                    } else {
+                        html += '<h3 style="margin-bottom: 15px;">Decrypted Votes:</h3>';
+                        data.votes.forEach((vote, index) => {
+                            html += `<div class="tally-item">${index + 1}. ${vote}</div>`;
+                        });
+
+                        if (Object.keys(data.tally).length > 0) {
+                            html += '<h3 style="margin-top: 20px; margin-bottom: 15px;">Tally:</h3>';
+                            for (const [candidate, count] of Object.entries(data.tally)) {
+                                html += `<div class="tally-item"><span>${candidate}</span><span><strong>${count}</strong></span></div>`;
+                            }
+
+                            if (data.winners.length > 0) {
+                                html += `<div class="winner">🏆 Winner: ${data.winners.join(', ')}</div>`;
+                            }
+                        }
+                    }
+
+                    resultsDiv.innerHTML = html;
+                } else {
+                    showMessage('adminPanelMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('adminPanelMessage', 'Error decrypting votes.', 'error');
+            }
+        }
+
+        async function resetVotes() {
+            if (!confirm('Are you sure you want to reset all votes? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/reset_votes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('adminPanelMessage', data.message, 'success');
+                    document.getElementById('results').innerHTML = '';
+                } else {
+                    showMessage('adminPanelMessage', 'Error resetting votes.', 'error');
+                }
+            } catch (error) {
+                showMessage('adminPanelMessage', 'Error connecting to server.', 'error');
+            }
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('voterId').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkVoter();
+        });
+
+        document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') adminLogin();
+        });
+    </script>
+</body>
+</html>
+
