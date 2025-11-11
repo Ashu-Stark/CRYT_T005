@@ -10,7 +10,6 @@ VOTERS_FILE = "voters.txt"
 ENCRYPTED_VOTES_FILE = "encrypted_votes.txt"
 CANDIDATES = ["Candidate - A", "Candidate - B", "Candidate - C"]
 
-# Initialize files
 def init_files():
     if not os.path.exists(VOTERS_FILE):
         sample = ["1001,0", "1002,0", "1003,0", "1004,0"]
@@ -77,17 +76,14 @@ def submit_vote():
     
     candidate = CANDIDATES[candidate_index]
     
-    # Encrypt vote with AES
     encrypted_vote_text, aes_key = encrypt_vote_with_aes(candidate)
     
-    # Encrypt AES key with RSA
     keys = load_rsa_keys()
     if keys is None:
         keys = ensure_rsa_keys()
     e, n = keys['e'], keys['n']
     rsa_enc_key_list = rsa_encrypt_string(aes_key, e, n)
     
-    # Save encrypted vote
     entry = {
         "voterid": voterid,
         "enc_vote": encrypted_vote_text,
@@ -96,7 +92,6 @@ def submit_vote():
     with open(ENCRYPTED_VOTES_FILE, "a") as f:
         f.write(json.dumps(entry) + "\n")
     
-    # Mark voter as voted
     voters[voterid] = 1
     save_voters(voters)
     
@@ -140,13 +135,11 @@ def decrypt_votes():
         except Exception as e:
             votes_plain.append(f"[DECRYPT_ERROR: {e}]")
     
-    # Tally votes
     tally = {}
     for v in votes_plain:
         if not v.startswith("[DECRYPT_ERROR"):
             tally[v] = tally.get(v, 0) + 1
     
-    # Find winners
     winners = []
     if tally:
         max_votes = max(tally.values())

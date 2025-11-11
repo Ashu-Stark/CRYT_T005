@@ -1,5 +1,3 @@
-#This handles the RSA (encryption,decryption,prime number generation)
-
 import os
 import random
 import math
@@ -7,7 +5,6 @@ from rsa import rsa_encrypt, rsa_decrypt
 
 KEYFILE = "rsa_keys.txt"
 
-#Checking the number is prime or not.
 def is_prime(n):
     if n <= 1:
         return False
@@ -20,7 +17,7 @@ def is_prime(n):
         if n % i == 0:
             return False
     return True
-#generates the prime number.
+
 def generate_prime(start=200, end=800):
     candidates = [p for p in range(start, end) if is_prime(p)]
     return random.choice(candidates)
@@ -37,7 +34,6 @@ def modinv(a, m):
         return None
     return x % m
 
-# RSA key generation
 def generate_rsa_keypair():
     
     p = generate_prime(200, 500)
@@ -83,7 +79,6 @@ def ensure_rsa_keys():
         save_rsa_keys(keys)
     return keys
 
-# ---------- RSA operations for string AES keys ----------
 def rsa_encrypt_string(aes_key_str, e, n):
     return rsa_encrypt(aes_key_str, e, n)
 

@@ -1,7 +1,6 @@
-#This handles the aes (encryption ,decryption,key generation)
 import random
 import string
-from aes import aes_encrypt, aes_decrypt   # uses your provided AES functions
+from aes import aes_encrypt, aes_decrypt
 
 KEY_LEN = 16
 

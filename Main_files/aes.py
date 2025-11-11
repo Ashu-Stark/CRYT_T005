@@ -1,10 +1,6 @@
-
-# Manual AES-128 implementation (ECB mode, PKCS#7 padding)
-# Pure Python, no external libraries.
 from typing import List
 
 SBOX = [
-# 0     1      2      3      4      5      6      7      8      9      A      B      C      D      E      F
 0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,
 0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,
 0xb7,0xfd,0x93,0x26,0x36,0x3f,0xf7,0xcc,0x34,0xa5,0xe5,0xf1,0x71,0xd8,0x31,0x15,
@@ -35,7 +31,6 @@ def _xtime(a):
     return ((a<<1) ^ (0x1B if a & 0x80 else 0)) & 0xFF
 
 def _mul(a,b):
-    # multiply in GF(2^8)
     res = 0
     for i in range(8):
         if b & 1:
@@ -54,7 +49,6 @@ def inv_sub_bytes(state):
     return [INV_SBOX[b] for b in state]
 
 def shift_rows(state):
-    # state is 16-byte list in row-major
     s = state[:]
     return [
         s[0], s[5], s[10], s[15],
@@ -104,7 +98,6 @@ def xor_bytes(a,b):
     return [x^y for x,y in zip(a,b)]
 
 def expand_key(key: bytes) -> List[List[int]]:
-    # key: 16 bytes
     Nk=4
     Nr=10
     Nb=4
@@ -112,14 +105,11 @@ def expand_key(key: bytes) -> List[List[int]]:
     for i in range(Nk, Nb*(Nr+1)):
         temp = key_words[i-1][:]
         if i % Nk == 0:
-            # RotWord
             temp = temp[1:]+temp[:1]
-            # SubWord
             temp = [SBOX[b] for b in temp]
             temp[0] ^= RCON[i//Nk]
         word = [ (temp[j] ^ key_words[i-Nk][j]) & 0xFF for j in range(4) ]
         key_words.append(word)
-    # flatten into round keys (each 16 bytes)
     round_keys=[]
     for r in range(Nr+1):
         rk = []
@@ -139,7 +129,6 @@ def encrypt_block(block: bytes, round_keys: List[List[int]]) -> bytes:
         state = shift_rows(state)
         state = mix_columns(state)
         state = add_round_key(state, round_keys[rnd])
-    # final round
     state = sub_bytes(state)
     state = shift_rows(state)
     state = add_round_key(state, round_keys[10])
@@ -215,5 +204,3 @@ def aes_decrypt(cipher_hex: str, key: str) -> str:
         plain += decrypt_block(block, round_keys)
     plain = pkcs7_unpad(plain)
     return plain.decode('utf-8', errors='replace')
-
-# End of AES implementation

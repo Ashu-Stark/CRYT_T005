@@ -5,27 +5,120 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-Voting System</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            color: #333333;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: #ffffff;
+            padding: 1.2rem 0;
+            border-bottom: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .nav-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2.5rem;
+            padding: 0 2rem;
+        }
+
+        .nav-brand {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #000000;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #333333;
+            text-decoration: none;
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #000000;
+            border-bottom: 2px solid #333333;
+        }
+
+        .nav-link.active {
+            color: #000000;
+            border-bottom: 2px solid #000000;
+            font-weight: 600;
         }
 
         .container {
-            background: white;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 30px;
-            border: 1px solid #ccc;
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 0;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #ffffff;
+            color: #333333;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
         }
 
         h1 {
-            text-align: center;
-            color: #333;
+            font-size: 2.2rem;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #666666;
+            font-weight: 400;
+        }
+
+        .content-wrapper {
+            padding: 2.5rem;
         }
 
         h2 {
-            color: #555;
+            color: #000000;
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0.75rem;
         }
 
         .panel {
@@ -37,93 +130,354 @@
         }
 
         button {
-            padding: 10px 20px;
-            margin: 5px;
-            background: #007bff;
-            color: white;
+            padding: 12px 24px;
+            margin: 0;
+            background: #333333;
+            color: #ffffff;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         button:hover {
-            background: #0056b3;
+            background: #000000;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #cccccc;
+            transform: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
         }
 
         .form-group {
-            margin: 15px 0;
+            margin: 1.5rem 0;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 0.6rem;
+            color: #333333;
+            font-weight: 500;
+            font-size: 0.95rem;
         }
 
         input {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
+            padding: 12px 14px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #333333;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
         }
 
         .candidate-item {
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
+            padding: 1.2rem;
+            margin: 1rem 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
             cursor: pointer;
-            background: #fafafa;
+            background: #ffffff;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         .candidate-item:hover {
-            background: #e0e0e0;
+            background: #f8f8f8;
+            border-color: #cccccc;
+            transform: translateX(4px);
         }
 
         .candidate-item.selected {
-            background: #d0d0ff;
-            border: 2px solid #0056b3;
+            background: #333333;
+            color: #ffffff;
+            border-color: #333333;
+            font-weight: 500;
+        }
+
+        .candidate-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 4px;
+            object-fit: cover;
+            border: 2px solid #e0e0e0;
+            flex-shrink: 0;
+        }
+
+        .candidate-item.selected .candidate-image {
+            border-color: #ffffff;
+        }
+
+        .candidate-name {
+            flex: 1;
+            font-weight: 500;
         }
 
         .message {
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid;
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            border-left: 4px solid #333333;
+            font-weight: 400;
+            background: #f8f8f8;
         }
 
         .message.success {
-            background: #d4edda;
-            color: #155724;
+            background: #f0f8f0;
+            border-left-color: #4a9e4a;
+            color: #2d5a2d;
         }
 
         .message.error {
-            background: #f8d7da;
-            color: #721c24;
+            background: #fff0f0;
+            border-left-color: #cc4444;
+            color: #8b2d2d;
         }
 
         .message.info {
-            background: #d1ecf1;
-            color: #0c5460;
+            background: #f0f8ff;
+            border-left-color: #4a7acc;
+            color: #2d4a8b;
         }
 
         .tally-item {
-            padding: 8px;
-            margin: 5px 0;
-            background: #f5f5f5;
-            border: 1px solid #ddd;
+            padding: 1rem 1.2rem;
+            margin: 0.8rem 0;
+            background: #f8f8f8;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            border-left: 3px solid #333333;
         }
 
         .winner {
-            color: green;
-            font-weight: bold;
-            margin-top: 15px;
+            color: #000000;
+            font-weight: 600;
+            font-size: 1.3rem;
+            margin-top: 1.5rem;
+            padding: 1.2rem;
+            background: #f8f8f8;
+            border: 2px solid #333333;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .section-content {
+            line-height: 1.8;
+            color: #333333;
+        }
+
+        .section-content h3 {
+            color: #000000;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .section-content p {
+            margin-bottom: 1.2rem;
+            font-size: 1rem;
+            color: #555555;
+        }
+
+        .section-content ul, .section-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .section-content li {
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+            color: #555555;
+        }
+
+        .contact-info {
+            background: #f8f8f8;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-top: 1.5rem;
+            border: 1px solid #e0e0e0;
+        }
+
+        .contact-info h3 {
+            margin-top: 0;
+            color: #000000;
+        }
+
+        .contact-info p {
+            margin: 0.8rem 0;
+            color: #555555;
+        }
+
+        .team-section {
+            margin-top: 2rem;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .team-member {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f8f8f8;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .team-member-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #333333;
+            margin: 0 auto 1rem;
+            display: block;
+        }
+
+        .team-member-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #000000;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-member-id {
+            color: #666666;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .team-member-email {
+            color: #333333;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .section-content code {
+            background: #e0e0e0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #000000;
+        }
+
+        .main-menu-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .main-menu-buttons button {
+            padding: 1.5rem;
+            font-size: 1.1rem;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                border-radius: 6px;
+            }
+
+            .content-wrapper {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .nav-container {
+                gap: 1rem;
+                padding: 0 1rem;
+                flex-wrap: wrap;
+            }
+
+            .nav-brand {
+                font-size: 1.1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            .nav-link {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.95rem;
+            }
+
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-menu-buttons {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="navbar">
+        <div class="nav-container">
+            <a class="nav-brand" onclick="showMainMenu()">Encoders</a>
+            <div class="nav-links">
+                <a class="nav-link" onclick="showMainMenu()">Home</a>
+                <a class="nav-link" onclick="showAboutUs()">About Us</a>
+                <a class="nav-link" onclick="showContactUs()">Contact Us</a>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
-        <h1>🗳️ E-Voting System</h1>
+        <div class="header">
+            <h1>🗳️ E-Voting System</h1>
+            <p>Secure • Transparent • Democratic</p>
+        </div>
+        <div class="content-wrapper">
 
         <div id="mainMenu" class="panel active">
-            <h2>Main Menu</h2>
-            <button onclick="showVoterLogin()">Voter Login</button>
-            <button onclick="showAdminLogin()">Admin Panel</button>
+            <h2>Welcome to E-Voting</h2>
+            <p style="margin-bottom: 1.5rem; color: #666666; font-size: 1.05rem;">Cast your vote securely using our advanced encryption technology. Your privacy and vote integrity are our top priorities.</p>
+            <div class="main-menu-buttons">
+                <button onclick="showVoterLogin()">Voter Login</button>
+                <button onclick="showAdminLogin()">Admin Panel</button>
+            </div>
         </div>
 
         <div id="voterLogin" class="panel">
@@ -133,16 +487,20 @@
                 <label for="voterId">Enter Voter ID:</label>
                 <input type="text" id="voterId" placeholder="e.g., 1001">
             </div>
-            <button onclick="checkVoter()">Submit</button>
-            <button onclick="backToMain()">Back</button>
+            <div class="button-group">
+                <button onclick="checkVoter()">Submit</button>
+                <button onclick="backToMain()">Back</button>
+            </div>
         </div>
 
         <div id="votingPanel" class="panel">
             <h2>Cast Your Vote</h2>
             <div id="votingMessage"></div>
             <div id="candidatesList"></div>
-            <button onclick="submitVote()" id="submitVoteBtn" disabled>Submit Vote</button>
-            <button onclick="backToMain()">Back</button>
+            <div class="button-group">
+                <button onclick="submitVote()" id="submitVoteBtn" disabled>Submit Vote</button>
+                <button onclick="backToMain()">Back</button>
+            </div>
         </div>
 
         <div id="adminLogin" class="panel">
@@ -156,17 +514,126 @@
                 <label for="adminPassword">Password:</label>
                 <input type="password" id="adminPassword">
             </div>
-            <button onclick="adminLogin()">Login</button>
-            <button onclick="backToMain()">Back</button>
+            <div class="button-group">
+                <button onclick="adminLogin()">Login</button>
+                <button onclick="backToMain()">Back</button>
+            </div>
         </div>
 
         <div id="adminPanel" class="panel">
             <h2>Admin Panel</h2>
             <div id="adminPanelMessage"></div>
-            <button onclick="decryptVotes()">Decrypt & Show Results</button>
-            <button onclick="resetVotes()">Reset Votes</button>
-            <div id="results"></div>
-            <button onclick="backToMain()">Back</button>
+            <div class="button-group">
+                <button onclick="decryptVotes()">Decrypt & Show Results</button>
+                <button onclick="resetVotes()">Reset Votes</button>
+            </div>
+            <div id="results" style="margin-top: 2rem;"></div>
+            <div class="button-group" style="margin-top: 1.5rem;">
+                <button onclick="backToMain()">Back</button>
+            </div>
+        </div>
+
+        <div id="aboutUs" class="panel">
+            <h2>About Us</h2>
+            <div class="section-content">
+                <div class="team-section">
+                    <h3>Our Team</h3>
+                    <div class="team-grid">
+                        <div class="team-member">
+                            <img src="/static/images/Aniket.png" onerror="this.src='https://via.placeholder.com/150/667eea/ffffff?text=AS'" alt="Aniket Singh" class="team-member-image">
+                            <div class="team-member-name">Aniket Singh</div>
+                            <div class="team-member-id">ID: 24021921</div>
+                            <div class="team-member-email">24021921@geu.ac.in</div>
+                        </div>
+                        <div class="team-member">
+                            <img src="/static/images/Ashutosh.png" onerror="this.src='https://via.placeholder.com/150/764ba2/ffffff?text=AK'" alt="Ashutosh" class="team-member-image">
+                            <div class="team-member-name">Ashutosh</div>
+                            <div class="team-member-id">ID: 24021603</div>
+                            <div class="team-member-email">24021603@geu.ac.in</div>
+                        </div>
+                        <div class="team-member">
+                            <img src="/static/images/Shoyam.png" onerror="this.src='https://via.placeholder.com/150/333333/ffffff?text=SB'" alt="Shoyam Bishnoi" class="team-member-image">
+                            <div class="team-member-name">Shoyam Bishnoi</div>
+                            <div class="team-member-id">ID: 240211797</div>
+                            <div class="team-member-email">240211797@geu.ac.in</div>
+                        </div>
+                        <div class="team-member">
+                            <img src="/static/images/Tanishl.png" onerror="this.src='https://via.placeholder.com/150/4a9e4a/ffffff?text=TG'" alt="Tanishk Gupta" class="team-member-image">
+                            <div class="team-member-name">Tanishk Gupta</div>
+                            <div class="team-member-id">ID: 240111241</div>
+                            <div class="team-member-email">240111241@geu.ac.in</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p>Welcome to our secure E-Voting System. We are committed to providing a transparent, secure, and efficient voting platform that ensures the integrity of the democratic process.</p>
+                
+                <h3>Our Mission</h3>
+                <p>Our mission is to revolutionize the voting process by leveraging advanced cryptographic technologies to ensure vote security, anonymity, and verifiability while maintaining accessibility for all voters.</p>
+                
+                <h3>Security Features</h3>
+                <p>Our system employs state-of-the-art encryption methods:</p>
+                <ul>
+                    <li><strong>AES Encryption:</strong> Votes are encrypted using Advanced Encryption Standard (AES) to ensure confidentiality.</li>
+                    <li><strong>RSA Encryption:</strong> AES keys are further protected using RSA public-key cryptography.</li>
+                    <li><strong>Voter Authentication:</strong> Each voter is authenticated using a unique Voter ID.</li>
+                    <li><strong>One Vote Per Voter:</strong> The system ensures that each voter can only cast one vote.</li>
+                </ul>
+                
+                <h3>How It Works</h3>
+                <p>When you cast your vote:</p>
+                <ol>
+                    <li>Your vote is encrypted using AES encryption with a randomly generated key.</li>
+                    <li>The AES key is then encrypted using RSA public-key cryptography.</li>
+                    <li>Both the encrypted vote and encrypted key are stored securely.</li>
+                    <li>Only authorized administrators can decrypt and view the results.</li>
+                </ol>
+                
+                <h3>Transparency & Trust</h3>
+                <p>We believe in transparency and accountability. Our system maintains a complete audit trail while protecting voter privacy. All votes are securely stored and can only be decrypted by authorized personnel using the private key.</p>
+            </div>
+            <div class="button-group" style="margin-top: 2rem;">
+                <button onclick="backToMain()">Back to Home</button>
+            </div>
+        </div>
+
+        <div id="contactUs" class="panel">
+            <h2>Contact Us</h2>
+            <div class="section-content">
+                <p>We're here to help! If you have any questions, concerns, or need assistance with the voting process, please don't hesitate to reach out to us.</p>
+                
+                <div class="contact-info">
+                    <h3>Get in Touch</h3>
+                    <p><strong>Email:</strong> 24021603@geu.ac.in</p>
+                    <p><strong>Phone:</strong> +91 8077479704</p>
+                    <p><strong>Office Hours:</strong> Monday - Friday, 9:00 AM - 5:00 PM IST</p>
+                </div>
+                
+                <h3>Technical Support</h3>
+                <p>For technical issues or questions about the voting system:</p>
+                <p><strong>Technical Support Email:</strong> 24021603@geu.ac.in</p>
+                <p><strong>Support Hotline:</strong> +91 8077479704</p>
+                
+                <h3>Administrative Inquiries</h3>
+                <p>For administrative matters, voter registration issues, or general inquiries:</p>
+                <p><strong>Administrative Email:</strong> 24021603@geu.ac.in</p>
+                
+                <h3>Address</h3>
+                <p>
+                    E-Voting System Headquarters<br>
+                    Graphic Era University<br>
+                    Dehradun, Uttarakhand<br>
+                    India
+                </p>
+                
+                <h3>Emergency Contact</h3>
+                <p>For urgent voting-related issues during election periods, please contact our 24/7 emergency hotline:</p>
+                <p><strong>Emergency Hotline:</strong> +91 8077479704</p>
+            </div>
+            <div class="button-group" style="margin-top: 2rem;">
+                <button onclick="backToMain()">Back to Home</button>
+            </div>
+        </div>
         </div>
     </div>
 
@@ -174,9 +641,39 @@
         let currentVoterId = null;
         let selectedCandidate = null;
 
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavLinks('mainMenu');
+        });
+
         function showPanel(panelId) {
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.getElementById(panelId).classList.add('active');
+            updateNavLinks(panelId);
+        }
+
+        function updateNavLinks(activePanel) {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+            
+            if (activePanel === 'mainMenu' || activePanel === 'voterLogin' || activePanel === 'votingPanel' || activePanel === 'adminLogin' || activePanel === 'adminPanel') {
+                navLinks[0].classList.add('active');
+            } else if (activePanel === 'aboutUs') {
+                navLinks[1].classList.add('active');
+            } else if (activePanel === 'contactUs') {
+                navLinks[2].classList.add('active');
+            }
+        }
+
+        function showMainMenu() {
+            showPanel('mainMenu');
+        }
+
+        function showAboutUs() {
+            showPanel('aboutUs');
+        }
+
+        function showContactUs() {
+            showPanel('contactUs');
         }
 
         function showMessage(elementId, message, type) {
@@ -200,6 +697,7 @@
             showPanel('mainMenu');
             currentVoterId = null;
             selectedCandidate = null;
+            updateNavLinks('mainMenu');
         }
 
         function checkVoter() {
@@ -237,10 +735,27 @@
             selectedCandidate = null;
             document.getElementById('submitVoteBtn').disabled = true;
 
+            const placeholderImages = [
+                'https://via.placeholder.com/150/667eea/ffffff?text=Candidate+A',
+                'https://via.placeholder.com/150/764ba2/ffffff?text=Candidate+B',
+                'https://via.placeholder.com/150/333333/ffffff?text=Candidate+C'
+            ];
+
             for (let i = 0; i < candidates.length; i++) {
                 const div = document.createElement('div');
                 div.className = 'candidate-item';
-                div.textContent = candidates[i];
+                
+                const img = document.createElement('img');
+                img.src = placeholderImages[i] || 'https://via.placeholder.com/150/cccccc/666666?text=Candidate';
+                img.className = 'candidate-image';
+                img.alt = candidates[i];
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'candidate-name';
+                nameSpan.textContent = candidates[i];
+                
+                div.appendChild(img);
+                div.appendChild(nameSpan);
                 div.onclick = function() { selectCandidate(i, div); };
                 list.appendChild(div);
             }

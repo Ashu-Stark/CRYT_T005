@@ -1,4 +1,3 @@
-# This is for the teminal UI.
 import os
 import json
 from aes_handler import encrypt_vote_with_aes, decrypt_vote_with_aes
@@ -10,7 +9,6 @@ RSA_KEYFILE = "rsa_keys.txt"
 
 CANDIDATES = ["Candidate - A", "Candidate - B", "Candidate - C"]
 
-# ----------------- initialization -----------------
 def init_files():
     
     if not os.path.exists(VOTERS_FILE):
@@ -21,7 +19,6 @@ def init_files():
         open(ENCRYPTED_VOTES_FILE, "w").close()
     ensure_rsa_keys()
 
-# ----------------- voters helpers -----------------
 def load_voters():
     voters = {}
     if not os.path.exists(VOTERS_FILE):
@@ -55,7 +52,6 @@ def set_voted(voterid):
     voters[voterid] = 1
     save_voters(voters)
 
-# ----------------- voting flow -----------------
 def voter_flow():
     voterid = input("Enter voter id (or 'back'): ").strip()
     if voterid.lower() == "back":
@@ -95,7 +91,6 @@ def voter_flow():
     set_voted(voterid)
     print("Vote submitted successfully.")
 
-# ----------------- admin panel -----------------
 def admin_panel():
     aid = input("Admin id: ").strip()
     apw = input("Admin password: ").strip()
@@ -189,7 +184,6 @@ def reset_votes():
     save_voters(voters)
     print("All votes cleared and voter statuses set to 0.")
 
-# ----------------- main -----------------
 def main_menu():
     init_files()
     while True:
