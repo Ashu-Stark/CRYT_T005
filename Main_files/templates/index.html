@@ -334,16 +334,6 @@
             cursor: not-allowed;
         }
 
-        .auto-refresh-indicator {
-            display: inline-block;
-            padding: 0.3rem 0.6rem;
-            background: #f0f8f0;
-            border: 1px solid #4a9e4a;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: #2d5a2d;
-            margin-left: 0.5rem;
-        }
 
         .tally-item {
             padding: 1rem 1.2rem;
@@ -599,13 +589,12 @@
         </div>
 
         <div id="adminPanel" class="panel">
-            <h2>Admin Panel <span id="autoRefreshIndicator" class="auto-refresh-indicator" style="display: none;">Auto-refresh: ON</span></h2>
+            <h2>Admin Panel</h2>
             <div id="adminPanelMessage"></div>
             <div class="button-group">
                 <button onclick="decryptVotes()" id="decryptBtn">Decrypt & Show Results</button>
                 <button onclick="resetVotes()" id="resetBtn">Reset Votes</button>
                 <button onclick="loadAdminData()" id="refreshBtn">Refresh Data</button>
-                <button onclick="toggleAutoRefresh()" id="autoRefreshBtn">Enable Auto-Refresh</button>
             </div>
             
             <!-- Encrypted Votes Section -->
@@ -743,8 +732,6 @@
     <script>
         let currentVoterId = null;
         let selectedCandidate = null;
-        let autoRefreshInterval = null;
-        let isAutoRefreshEnabled = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             updateNavLinks('mainMenu');
@@ -829,10 +816,6 @@
             currentVoterId = null;
             selectedCandidate = null;
             updateNavLinks('mainMenu');
-            // Clear any auto-refresh when leaving admin panel
-            if (isAutoRefreshEnabled) {
-                toggleAutoRefresh();
-            }
         }
 
         function checkVoter() {
@@ -1012,26 +995,6 @@
                     resetButton('refreshBtn', originalText);
                 }
             });
-        }
-
-        function toggleAutoRefresh() {
-            const btn = document.getElementById('autoRefreshBtn');
-            const indicator = document.getElementById('autoRefreshIndicator');
-            
-            if (isAutoRefreshEnabled) {
-                clearInterval(autoRefreshInterval);
-                isAutoRefreshEnabled = false;
-                btn.textContent = 'Enable Auto-Refresh';
-                indicator.style.display = 'none';
-            } else {
-                autoRefreshInterval = setInterval(() => {
-                    loadEncryptedVotes();
-                    loadVoterStatus();
-                }, 5000); // Refresh every 5 seconds
-                isAutoRefreshEnabled = true;
-                btn.textContent = 'Disable Auto-Refresh';
-                indicator.style.display = 'inline-block';
-            }
         }
 
         function loadEncryptedVotes() {
