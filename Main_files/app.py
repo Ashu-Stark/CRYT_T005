@@ -23,22 +23,32 @@ def load_voters():
     voters = {}
     if not os.path.exists(VOTERS_FILE):
         return voters
-    with open(VOTERS_FILE, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            parts = line.split(",")
-            if len(parts) >= 2:
-                vid = parts[0].strip()
-                status = int(parts[1].strip())
-                voters[vid] = status
+    try:
+        with open(VOTERS_FILE, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split(",")
+                if len(parts) >= 2:
+                    try:
+                        vid = parts[0].strip()
+                        status = int(parts[1].strip())
+                        voters[vid] = status
+                    except ValueError:
+                        continue
+    except Exception as e:
+        print(f"Error loading voters: {e}")
     return voters
 
 def save_voters(voters):
-    with open(VOTERS_FILE, "w") as f:
-        for vid, status in voters.items():
-            f.write(f"{vid},{status}\n")
+    try:
+        with open(VOTERS_FILE, "w") as f:
+            for vid, status in voters.items():
+                f.write(f"{vid},{status}\n")
+    except Exception as e:
+        print(f"Error saving voters: {e}")
+        raise
 
 @app.route('/')
 def index():
@@ -46,56 +56,85 @@ def index():
 
 @app.route('/api/check_voter', methods=['POST'])
 def check_voter():
-    data = request.json
-    voterid = data.get('voterid', '').strip()
-    
-    voters = load_voters()
-    if voterid not in voters:
-        return jsonify({'exists': False, 'message': 'Voter ID not found.'})
-    
-    if voters[voterid] == 1:
-        return jsonify({'exists': True, 'voted': True, 'message': 'You have already voted.'})
-    
-    return jsonify({'exists': True, 'voted': False, 'candidates': CANDIDATES})
+    try:
+        if not request.json:
+            return jsonify({'exists': False, 'message': 'Invalid request data.'}), 400
+        
+        data = request.json
+        voterid = data.get('voterid', '').strip()
+        
+        if not voterid:
+            return jsonify({'exists': False, 'message': 'Please enter a voter ID.'}), 400
+        
+        voters = load_voters()
+        if voterid not in voters:
+            return jsonify({'exists': False, 'message': 'Voter ID not found.'})
+        
+        if voters[voterid] == 1:
+            return jsonify({'exists': True, 'voted': True, 'message': 'You have already voted.'})
+        
+        return jsonify({'exists': True, 'voted': False, 'candidates': CANDIDATES})
+    except Exception as e:
+        return jsonify({'exists': False, 'message': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/submit_vote', methods=['POST'])
 def submit_vote():
-    data = request.json
-    voterid = data.get('voterid', '').strip()
-    candidate_index = data.get('candidate_index')
-    
-    if candidate_index is None or candidate_index < 0 or candidate_index >= len(CANDIDATES):
-        return jsonify({'success': False, 'message': 'Invalid candidate selection.'})
-    
-    voters = load_voters()
-    if voterid not in voters:
-        return jsonify({'success': False, 'message': 'Voter ID not found.'})
-    
-    if voters[voterid] == 1:
-        return jsonify({'success': False, 'message': 'You have already voted.'})
-    
-    candidate = CANDIDATES[candidate_index]
-    
-    encrypted_vote_text, aes_key = encrypt_vote_with_aes(candidate)
-    
-    keys = load_rsa_keys()
-    if keys is None:
-        keys = ensure_rsa_keys()
-    e, n = keys['e'], keys['n']
-    rsa_enc_key_list = rsa_encrypt_string(aes_key, e, n)
-    
-    entry = {
-        "voterid": voterid,
-        "enc_vote": encrypted_vote_text,
-        "enc_aes_key": ",".join(map(str, rsa_enc_key_list))
-    }
-    with open(ENCRYPTED_VOTES_FILE, "a") as f:
-        f.write(json.dumps(entry) + "\n")
-    
-    voters[voterid] = 1
-    save_voters(voters)
-    
-    return jsonify({'success': True, 'message': 'Vote submitted successfully!'})
+    try:
+        if not request.json:
+            return jsonify({'success': False, 'message': 'Invalid request data.'}), 400
+        
+        data = request.json
+        voterid = data.get('voterid', '').strip()
+        candidate_index = data.get('candidate_index')
+        
+        if not voterid:
+            return jsonify({'success': False, 'message': 'Voter ID is required.'}), 400
+        
+        if candidate_index is None or not isinstance(candidate_index, int) or candidate_index < 0 or candidate_index >= len(CANDIDATES):
+            return jsonify({'success': False, 'message': 'Invalid candidate selection.'}), 400
+        
+        voters = load_voters()
+        if voterid not in voters:
+            return jsonify({'success': False, 'message': 'Voter ID not found.'}), 404
+        
+        if voters[voterid] == 1:
+            return jsonify({'success': False, 'message': 'You have already voted.'}), 403
+        
+        candidate = CANDIDATES[candidate_index]
+        
+        try:
+            encrypted_vote_text, aes_key = encrypt_vote_with_aes(candidate)
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Encryption error: {str(e)}'}), 500
+        
+        keys = load_rsa_keys()
+        if keys is None:
+            keys = ensure_rsa_keys()
+        
+        try:
+            e, n = keys['e'], keys['n']
+            rsa_enc_key_list = rsa_encrypt_string(aes_key, e, n)
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'RSA encryption error: {str(e)}'}), 500
+        
+        entry = {
+            "voterid": voterid,
+            "enc_vote": encrypted_vote_text,
+            "enc_aes_key": ",".join(map(str, rsa_enc_key_list))
+        }
+        
+        try:
+            with open(ENCRYPTED_VOTES_FILE, "a") as f:
+                f.write(json.dumps(entry) + "\n")
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'File write error: {str(e)}'}), 500
+        
+        voters[voterid] = 1
+        save_voters(voters)
+        
+        return jsonify({'success': True, 'message': 'Vote submitted successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/admin_login', methods=['POST'])
 def admin_login():
@@ -160,6 +199,59 @@ def reset_votes():
         voters[vid] = 0
     save_voters(voters)
     return jsonify({'success': True, 'message': 'All votes cleared and voter statuses reset.'})
+
+@app.route('/api/get_encrypted_votes', methods=['GET'])
+def get_encrypted_votes():
+    """Get all encrypted votes from encrypted_votes.txt"""
+    encrypted_votes = []
+    if not os.path.exists(ENCRYPTED_VOTES_FILE):
+        return jsonify({'success': True, 'votes': []})
+    
+    try:
+        with open(ENCRYPTED_VOTES_FILE, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entry = json.loads(line)
+                        encrypted_votes.append(entry)
+                    except json.JSONDecodeError:
+                        continue
+        return jsonify({'success': True, 'votes': encrypted_votes})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/get_voter_status', methods=['GET'])
+def get_voter_status():
+    """Get voter list with voting status"""
+    voters = load_voters()
+    voter_list = []
+    for vid, status in voters.items():
+        voter_list.append({
+            'voter_id': vid,
+            'voted': status == 1
+        })
+    # Sort by voter ID for consistent display
+    voter_list.sort(key=lambda x: int(x['voter_id']))
+    return jsonify({'success': True, 'voters': voter_list})
+
+@app.route('/api/get_rsa_keys', methods=['GET'])
+def get_rsa_keys():
+    """Get RSA keys from rsa_keys.txt"""
+    keys = load_rsa_keys()
+    if keys is None:
+        return jsonify({'success': False, 'message': 'RSA keys not found.'})
+    
+    return jsonify({
+        'success': True,
+        'keys': {
+            'p': keys['p'],
+            'q': keys['q'],
+            'n': keys['n'],
+            'e': keys['e'],
+            'd': keys['d']
+        }
+    })
 
 if __name__ == '__main__':
     init_files()

@@ -267,6 +267,84 @@
             color: #2d4a8b;
         }
 
+        .voter-row:hover {
+            background: #f8f8f8 !important;
+            transform: scale(1.01);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .voter-row.voted:hover {
+            background: #f0f8f0 !important;
+        }
+
+        .voter-row.notvoted:hover {
+            background: #f0f8ff !important;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .loading-spinner .loading {
+            width: 40px;
+            height: 40px;
+            border-width: 4px;
+            border-top-color: #333333;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .auto-refresh-indicator {
+            display: inline-block;
+            padding: 0.3rem 0.6rem;
+            background: #f0f8f0;
+            border: 1px solid #4a9e4a;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #2d5a2d;
+            margin-left: 0.5rem;
+        }
+
         .tally-item {
             padding: 1rem 1.2rem;
             margin: 0.8rem 0;
@@ -485,7 +563,7 @@
             <div id="voterMessage"></div>
             <div class="form-group">
                 <label for="voterId">Enter Voter ID:</label>
-                <input type="text" id="voterId" placeholder="e.g., 1001">
+                <input type="text" id="voterId" placeholder="e.g., 1001" onkeypress="if(event.key==='Enter') checkVoter()" pattern="[0-9]+" inputmode="numeric">
             </div>
             <div class="button-group">
                 <button onclick="checkVoter()">Submit</button>
@@ -508,11 +586,11 @@
             <div id="adminMessage"></div>
             <div class="form-group">
                 <label for="adminId">Admin ID:</label>
-                <input type="text" id="adminId">
+                <input type="text" id="adminId" onkeypress="if(event.key==='Enter') document.getElementById('adminPassword').focus()">
             </div>
             <div class="form-group">
                 <label for="adminPassword">Password:</label>
-                <input type="password" id="adminPassword">
+                <input type="password" id="adminPassword" onkeypress="if(event.key==='Enter') adminLogin()">
             </div>
             <div class="button-group">
                 <button onclick="adminLogin()">Login</button>
@@ -521,13 +599,31 @@
         </div>
 
         <div id="adminPanel" class="panel">
-            <h2>Admin Panel</h2>
+            <h2>Admin Panel <span id="autoRefreshIndicator" class="auto-refresh-indicator" style="display: none;">Auto-refresh: ON</span></h2>
             <div id="adminPanelMessage"></div>
             <div class="button-group">
-                <button onclick="decryptVotes()">Decrypt & Show Results</button>
-                <button onclick="resetVotes()">Reset Votes</button>
+                <button onclick="decryptVotes()" id="decryptBtn">Decrypt & Show Results</button>
+                <button onclick="resetVotes()" id="resetBtn">Reset Votes</button>
+                <button onclick="loadAdminData()" id="refreshBtn">Refresh Data</button>
+                <button onclick="toggleAutoRefresh()" id="autoRefreshBtn">Enable Auto-Refresh</button>
             </div>
+            
+            <!-- Encrypted Votes Section -->
+            <div style="margin-top: 2rem;">
+                <h3 style="color: #000000; font-size: 1.3rem; margin-bottom: 1rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem;">Encrypted Votes</h3>
+                <div id="encryptedVotesDisplay"></div>
+            </div>
+            
+            <!-- Voter Status Section with Statistics -->
+            <div style="margin-top: 2rem;">
+                <h3 style="color: #000000; font-size: 1.3rem; margin-bottom: 1rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem;">Voter Status & Statistics</h3>
+                <div id="voterStatsDisplay" style="margin-bottom: 1.5rem;"></div>
+                <div id="voterStatusDisplay"></div>
+            </div>
+            
+            <!-- Decrypt Results Section -->
             <div id="results" style="margin-top: 2rem;"></div>
+            
             <div class="button-group" style="margin-top: 1.5rem;">
                 <button onclick="backToMain()">Back</button>
             </div>
@@ -637,9 +733,18 @@
         </div>
     </div>
 
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="loading"></div>
+            <div>Processing...</div>
+        </div>
+    </div>
+
     <script>
         let currentVoterId = null;
         let selectedCandidate = null;
+        let autoRefreshInterval = null;
+        let isAutoRefreshEnabled = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             updateNavLinks('mainMenu');
@@ -680,6 +785,32 @@
             document.getElementById(elementId).innerHTML = '<div class="message ' + type + '">' + message + '</div>';
         }
 
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        function setButtonLoading(buttonId, isLoading) {
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.disabled = isLoading;
+                if (isLoading) {
+                    btn.innerHTML = '<span class="loading"></span> Processing...';
+                }
+            }
+        }
+
+        function resetButton(buttonId, originalText) {
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
         function showVoterLogin() {
             showPanel('voterLogin');
             document.getElementById('voterId').value = '';
@@ -698,6 +829,10 @@
             currentVoterId = null;
             selectedCandidate = null;
             updateNavLinks('mainMenu');
+            // Clear any auto-refresh when leaving admin panel
+            if (isAutoRefreshEnabled) {
+                toggleAutoRefresh();
+            }
         }
 
         function checkVoter() {
@@ -707,12 +842,21 @@
                 return;
             }
 
+            showLoading();
             fetch('/api/check_voter', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ voterid: voterId })
             })
-            .then(response => response.json())
+            .then(response => {
+                hideLoading();
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Server error');
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (!data.exists) {
                     showMessage('voterMessage', data.message, 'error');
@@ -723,8 +867,9 @@
                     showVotingPanel(data.candidates);
                 }
             })
-            .catch(() => {
-                showMessage('voterMessage', 'Error connecting to server.', 'error');
+            .catch(error => {
+                hideLoading();
+                showMessage('voterMessage', error.message || 'Error connecting to server.', 'error');
             });
         }
 
@@ -774,22 +919,41 @@
                 return;
             }
 
+            const submitBtn = document.getElementById('submitVoteBtn');
+            const originalText = submitBtn.innerHTML;
+            setButtonLoading('submitVoteBtn', true);
+            showLoading();
+
             fetch('/api/submit_vote', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ voterid: currentVoterId, candidate_index: selectedCandidate })
             })
-            .then(response => response.json())
+            .then(response => {
+                hideLoading();
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Server error');
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showMessage('votingMessage', data.message, 'success');
-                    setTimeout(backToMain, 2000);
+                    setTimeout(() => {
+                        backToMain();
+                        resetButton('submitVoteBtn', originalText);
+                    }, 2000);
                 } else {
                     showMessage('votingMessage', data.message, 'error');
+                    resetButton('submitVoteBtn', originalText);
                 }
             })
-            .catch(() => {
-                showMessage('votingMessage', 'Error submitting vote.', 'error');
+            .catch(error => {
+                hideLoading();
+                showMessage('votingMessage', error.message || 'Error submitting vote.', 'error');
+                resetButton('submitVoteBtn', originalText);
             });
         }
 
@@ -802,27 +966,302 @@
                 return;
             }
 
+            showLoading();
             fetch('/api/admin_login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ admin_id: adminId, admin_password: adminPassword })
             })
-            .then(response => response.json())
+            .then(response => {
+                hideLoading();
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Login failed');
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showPanel('adminPanel');
                     document.getElementById('adminPanelMessage').innerHTML = '';
                     document.getElementById('results').innerHTML = '';
+                    loadAdminData();
                 } else {
                     showMessage('adminMessage', data.message, 'error');
                 }
             })
-            .catch(() => {
-                showMessage('adminMessage', 'Error connecting to server.', 'error');
+            .catch(error => {
+                hideLoading();
+                showMessage('adminMessage', error.message || 'Error connecting to server.', 'error');
+            });
+        }
+
+        function loadAdminData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const originalText = refreshBtn ? refreshBtn.innerHTML : 'Refresh Data';
+            if (refreshBtn) {
+                setButtonLoading('refreshBtn', true);
+            }
+            
+            Promise.all([
+                loadEncryptedVotes(),
+                loadVoterStatus()
+            ]).finally(() => {
+                if (refreshBtn) {
+                    resetButton('refreshBtn', originalText);
+                }
+            });
+        }
+
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('autoRefreshBtn');
+            const indicator = document.getElementById('autoRefreshIndicator');
+            
+            if (isAutoRefreshEnabled) {
+                clearInterval(autoRefreshInterval);
+                isAutoRefreshEnabled = false;
+                btn.textContent = 'Enable Auto-Refresh';
+                indicator.style.display = 'none';
+            } else {
+                autoRefreshInterval = setInterval(() => {
+                    loadEncryptedVotes();
+                    loadVoterStatus();
+                }, 5000); // Refresh every 5 seconds
+                isAutoRefreshEnabled = true;
+                btn.textContent = 'Disable Auto-Refresh';
+                indicator.style.display = 'inline-block';
+            }
+        }
+
+        function loadEncryptedVotes() {
+            return fetch('/api/get_encrypted_votes', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let html = '';
+                    if (data.votes.length === 0) {
+                        html = '<div class="message info">No encrypted votes found.</div>';
+                    } else {
+                        // Summary card
+                        html += '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; color: white; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">';
+                        html += '<div style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0.3rem;">Total Encrypted Votes</div>';
+                        html += '<div style="font-size: 2.5rem; font-weight: 700;">' + data.votes.length + '</div>';
+                        html += '</div>';
+                        
+                        html += '<div style="overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 4px;">';
+                        html += '<table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">';
+                        html += '<thead><tr style="background: #f8f8f8; border-bottom: 2px solid #e0e0e0;">';
+                        html += '<th style="padding: 0.75rem; text-align: left; border: 1px solid #e0e0e0;">#</th>';
+                        html += '<th style="padding: 0.75rem; text-align: left; border: 1px solid #e0e0e0;">Voter ID</th>';
+                        html += '<th style="padding: 0.75rem; text-align: left; border: 1px solid #e0e0e0;">Encrypted Vote</th>';
+                        html += '<th style="padding: 0.75rem; text-align: left; border: 1px solid #e0e0e0;">Encrypted AES Key</th>';
+                        html += '</tr></thead><tbody>';
+                        
+                        for (let i = 0; i < data.votes.length; i++) {
+                            const vote = data.votes[i];
+                            html += '<tr style="border-bottom: 1px solid #e0e0e0; transition: background 0.2s;" onmouseover="this.style.background=\'#f8f8f8\'" onmouseout="this.style.background=\'\'">';
+                            html += '<td style="padding: 0.75rem; border: 1px solid #e0e0e0; font-weight: 600; color: #666666;">' + (i + 1) + '</td>';
+                            html += '<td style="padding: 0.75rem; border: 1px solid #e0e0e0; font-weight: 500; font-family: monospace;">' + vote.voterid + '</td>';
+                            html += '<td style="padding: 0.75rem; border: 1px solid #e0e0e0; font-family: monospace; font-size: 0.85em; word-break: break-all; color: #333333;">' + vote.enc_vote + '</td>';
+                            html += '<td style="padding: 0.75rem; border: 1px solid #e0e0e0; font-family: monospace; font-size: 0.85em; word-break: break-all; color: #666666;">' + vote.enc_aes_key + '</td>';
+                            html += '</tr>';
+                        }
+                        html += '</tbody></table></div>';
+                    }
+                    document.getElementById('encryptedVotesDisplay').innerHTML = html;
+                } else {
+                    document.getElementById('encryptedVotesDisplay').innerHTML = '<div class="message error">Error loading encrypted votes: ' + (data.message || 'Unknown error') + '</div>';
+                }
+            })
+            .catch((error) => {
+                document.getElementById('encryptedVotesDisplay').innerHTML = '<div class="message error">Error connecting to server: ' + (error.message || 'Unknown error') + '</div>';
+            });
+        }
+
+        function loadVoterStatus() {
+            return fetch('/api/get_voter_status', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Calculate statistics
+                    const totalVoters = data.voters.length;
+                    const votedCount = data.voters.filter(v => v.voted).length;
+                    const notVotedCount = totalVoters - votedCount;
+                    const votedPercentage = totalVoters > 0 ? Math.round((votedCount / totalVoters) * 100) : 0;
+                    const notVotedPercentage = totalVoters > 0 ? Math.round((notVotedCount / totalVoters) * 100) : 0;
+                    
+                    // Display Statistics with Visualizations
+                    let statsHtml = '';
+                    if (totalVoters === 0) {
+                        statsHtml = '<div class="message info">No voters found.</div>';
+                    } else {
+                        statsHtml += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">';
+                        
+                        // Total Voters Card
+                        statsHtml += '<div style="background: #f8f8f8; padding: 1.5rem; border-radius: 4px; border: 1px solid #e0e0e0; text-align: center;">';
+                        statsHtml += '<div style="font-size: 2.5rem; font-weight: 600; color: #333333; margin-bottom: 0.5rem;">' + totalVoters + '</div>';
+                        statsHtml += '<div style="color: #666666; font-size: 1rem;">Total Voters</div>';
+                        statsHtml += '</div>';
+                        
+                        // Voted Card
+                        statsHtml += '<div style="background: #f0f8f0; padding: 1.5rem; border-radius: 4px; border: 2px solid #4a9e4a; text-align: center;">';
+                        statsHtml += '<div style="font-size: 2.5rem; font-weight: 600; color: #2d5a2d; margin-bottom: 0.5rem;">' + votedCount + '</div>';
+                        statsHtml += '<div style="color: #2d5a2d; font-size: 1rem; margin-bottom: 0.5rem;">Voted</div>';
+                        statsHtml += '<div style="font-size: 1.5rem; font-weight: 600; color: #4a9e4a;">' + votedPercentage + '%</div>';
+                        statsHtml += '</div>';
+                        
+                        // Not Voted Card
+                        statsHtml += '<div style="background: #f0f8ff; padding: 1.5rem; border-radius: 4px; border: 2px solid #4a7acc; text-align: center;">';
+                        statsHtml += '<div style="font-size: 2.5rem; font-weight: 600; color: #2d4a8b; margin-bottom: 0.5rem;">' + notVotedCount + '</div>';
+                        statsHtml += '<div style="color: #2d4a8b; font-size: 1rem; margin-bottom: 0.5rem;">Not Voted</div>';
+                        statsHtml += '<div style="font-size: 1.5rem; font-weight: 600; color: #4a7acc;">' + notVotedPercentage + '%</div>';
+                        statsHtml += '</div>';
+                        
+                        statsHtml += '</div>';
+                    }
+                    document.getElementById('voterStatsDisplay').innerHTML = statsHtml;
+                    
+                    // Enhanced Voter List Table with Filtering
+                    let tableHtml = '';
+                    if (data.voters.length === 0) {
+                        tableHtml = '<div class="message info">No voters found.</div>';
+                    } else {
+                        // Filter buttons
+                        tableHtml += '<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">';
+                        tableHtml += '<button onclick="filterVoters(\'all\')" id="filterAll" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: #333333; color: white; border: none; border-radius: 4px; cursor: pointer;">All (' + totalVoters + ')</button>';
+                        tableHtml += '<button onclick="filterVoters(\'voted\')" id="filterVoted" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: #e0e0e0; color: #333333; border: none; border-radius: 4px; cursor: pointer;">Voted (' + votedCount + ')</button>';
+                        tableHtml += '<button onclick="filterVoters(\'notvoted\')" id="filterNotVoted" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: #e0e0e0; color: #333333; border: none; border-radius: 4px; cursor: pointer;">Not Voted (' + notVotedCount + ')</button>';
+                        tableHtml += '</div>';
+                        
+                        tableHtml += '<div style="overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 4px;">';
+                        tableHtml += '<table style="width: 100%; border-collapse: collapse;" id="voterTable">';
+                        tableHtml += '<thead><tr style="background: #f8f8f8; border-bottom: 2px solid #e0e0e0;">';
+                        tableHtml += '<th style="padding: 0.75rem; text-align: left; border: 1px solid #e0e0e0; cursor: pointer;" onclick="sortTable(0)">Voter ID ↕</th>';
+                        tableHtml += '<th style="padding: 0.75rem; text-align: left; border: 1px solid #e0e0e0; cursor: pointer;" onclick="sortTable(1)">Status ↕</th>';
+                        tableHtml += '</tr></thead><tbody id="voterTableBody">';
+                        
+                        for (let i = 0; i < data.voters.length; i++) {
+                            const voter = data.voters[i];
+                            const statusText = voter.voted ? '✓ VOTED' : '✗ NOT VOTED';
+                            const statusClass = voter.voted ? 'success' : 'info';
+                            const rowClass = voter.voted ? 'voter-row voted' : 'voter-row notvoted';
+                            tableHtml += '<tr class="' + rowClass + '" style="border-bottom: 1px solid #e0e0e0; transition: background 0.2s;">';
+                            tableHtml += '<td style="padding: 0.75rem; border: 1px solid #e0e0e0; font-weight: 500; font-family: monospace;">' + voter.voter_id + '</td>';
+                            tableHtml += '<td style="padding: 0.75rem; border: 1px solid #e0e0e0;"><span class="message ' + statusClass + '" style="display: inline-block; padding: 0.3rem 0.6rem; margin: 0; border-radius: 4px;">' + statusText + '</span></td>';
+                            tableHtml += '</tr>';
+                        }
+                        tableHtml += '</tbody></table></div>';
+                        
+                        // Store voter data for filtering
+                        window.voterData = data.voters;
+                    }
+                    document.getElementById('voterStatusDisplay').innerHTML = tableHtml;
+                } else {
+                    document.getElementById('voterStatsDisplay').innerHTML = '<div class="message error">Error loading voter status: ' + (data.message || 'Unknown error') + '</div>';
+                    document.getElementById('voterStatusDisplay').innerHTML = '';
+                }
+            })
+            .catch((error) => {
+                document.getElementById('voterStatsDisplay').innerHTML = '<div class="message error">Error connecting to server: ' + (error.message || 'Unknown error') + '</div>';
+                document.getElementById('voterStatusDisplay').innerHTML = '';
+            });
+        }
+
+
+        // Voter table filtering and sorting functions
+        let currentFilter = 'all';
+        let sortDirection = { 0: 'asc', 1: 'asc' };
+
+        function filterVoters(filterType) {
+            currentFilter = filterType;
+            const rows = document.querySelectorAll('#voterTableBody tr');
+            const allBtn = document.getElementById('filterAll');
+            const votedBtn = document.getElementById('filterVoted');
+            const notVotedBtn = document.getElementById('filterNotVoted');
+            
+            // Reset button styles
+            allBtn.style.background = '#e0e0e0';
+            allBtn.style.color = '#333333';
+            votedBtn.style.background = '#e0e0e0';
+            votedBtn.style.color = '#333333';
+            notVotedBtn.style.background = '#e0e0e0';
+            notVotedBtn.style.color = '#333333';
+            
+            // Set active button style
+            if (filterType === 'all') {
+                allBtn.style.background = '#333333';
+                allBtn.style.color = 'white';
+                rows.forEach(row => row.style.display = '');
+            } else if (filterType === 'voted') {
+                votedBtn.style.background = '#333333';
+                votedBtn.style.color = 'white';
+                rows.forEach(row => {
+                    row.style.display = row.classList.contains('voted') ? '' : 'none';
+                });
+            } else if (filterType === 'notvoted') {
+                notVotedBtn.style.background = '#333333';
+                notVotedBtn.style.color = 'white';
+                rows.forEach(row => {
+                    row.style.display = row.classList.contains('notvoted') ? '' : 'none';
+                });
+            }
+        }
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById('voterTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Toggle sort direction
+            const direction = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+            sortDirection[columnIndex] = direction;
+            
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+                
+                if (columnIndex === 0) {
+                    // Sort by Voter ID (numeric)
+                    const aNum = parseInt(aText);
+                    const bNum = parseInt(bText);
+                    return direction === 'asc' ? aNum - bNum : bNum - aNum;
+                } else {
+                    // Sort by Status (text)
+                    return direction === 'asc' 
+                        ? aText.localeCompare(bText)
+                        : bText.localeCompare(aText);
+                }
+            });
+            
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update table header indicators
+            const headers = table.querySelectorAll('th');
+            headers.forEach((header, idx) => {
+                if (idx === columnIndex) {
+                    header.textContent = header.textContent.replace(' ↕', '') + (direction === 'asc' ? ' ↑' : ' ↓');
+                } else {
+                    header.textContent = header.textContent.replace(/ [↑↓]/, '') + ' ↕';
+                }
             });
         }
 
         function decryptVotes() {
+            const decryptBtn = document.getElementById('decryptBtn');
+            const originalText = decryptBtn ? decryptBtn.innerHTML : 'Decrypt & Show Results';
+            if (decryptBtn) {
+                setButtonLoading('decryptBtn', true);
+            }
+            showLoading();
+
             fetch('/api/decrypt_votes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
@@ -853,15 +1292,28 @@
                     showMessage('adminPanelMessage', data.message, 'error');
                 }
             })
-            .catch(() => {
-                showMessage('adminPanelMessage', 'Error decrypting votes.', 'error');
+            .catch((error) => {
+                showMessage('adminPanelMessage', 'Error decrypting votes: ' + (error.message || 'Unknown error'), 'error');
+            })
+            .finally(() => {
+                hideLoading();
+                if (decryptBtn) {
+                    resetButton('decryptBtn', originalText);
+                }
             });
         }
 
         function resetVotes() {
-            if (!confirm('Are you sure you want to reset all votes?')) {
+            if (!confirm('Are you sure you want to reset all votes? This action cannot be undone.')) {
                 return;
             }
+
+            const resetBtn = document.getElementById('resetBtn');
+            const originalText = resetBtn ? resetBtn.innerHTML : 'Reset Votes';
+            if (resetBtn) {
+                setButtonLoading('resetBtn', true);
+            }
+            showLoading();
 
             fetch('/api/reset_votes', {
                 method: 'POST',
@@ -876,8 +1328,18 @@
                     showMessage('adminPanelMessage', 'Error resetting votes.', 'error');
                 }
             })
-            .catch(() => {
-                showMessage('adminPanelMessage', 'Error connecting to server.', 'error');
+            .catch((error) => {
+                showMessage('adminPanelMessage', 'Error resetting votes: ' + (error.message || 'Unknown error'), 'error');
+            })
+            .finally(() => {
+                hideLoading();
+                if (resetBtn) {
+                    resetButton('resetBtn', originalText);
+                }
+                // Reload data after reset
+                setTimeout(() => {
+                    loadAdminData();
+                }, 500);
             });
         }
     </script>
