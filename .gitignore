@@ -53,3 +53,7 @@ instance/
 # Environment variables
 .env
 .env.local
+
+# runtime data, recreated by the app on first start (never commit keys)
+Main_files/rsa_keys.txt
+Main_files/encrypted_votes.txt
